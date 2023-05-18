@@ -4,7 +4,7 @@
 // Writable Streams -> process.stdout
 
 // process.stdin.pipe(process.stdout) -> Lê uma stream e encaminha para o .stdout
-import { Readable } from 'node:stream'
+import { Readable, Writable, Transform } from 'node:stream'
 
 // class OneToHundredStream extends Readable {
 //   index = 1
@@ -33,7 +33,7 @@ import { Readable } from 'node:stream'
 // // Lê a stream e já tenta escrever no terminal
 // new OneToHundredStream().pipe(process.stdout)
 
-
+// Ler dados
 class OneToHundredStream extends Readable {
   index = 1
   _read() {
@@ -51,4 +51,29 @@ class OneToHundredStream extends Readable {
   }
 }
 
-new OneToHundredStream().pipe(process.stdout)
+// Escrever dados
+class MultiplyByTenStream extends Writable {
+  // Chunk: buffer -> Pedaço que lemos da stream de leitura (this.push() do Readable)
+  // Encoding -> Como essa info está codificada
+  // Callback -> Função a ser chamada ao final dos métodos que irão trabalhar o chunk 
+  // IMPORTANTE: Uma Writable não retorna nada, é apenas uma Consumer, processando o dado
+  _write(chunk, encoding, callback) {
+    console.log(Number(chunk.toString()) * 10)
+    callback()
+  }
+}
+
+// Ler dados e escrever para outra Stream
+class ChunkToAnotherStream extends Transform {
+  _transform(chunk, encoding, callback) {
+    const transformed = Number(chunk.toString()) * (-1)
+
+    // 1º param -> Erro (caso não tenha dado erro no método, deve retornar nulo)
+    // 2º param -> Chunk transformado
+    callback(null, Buffer.from(String(transformed)))
+  }
+}
+
+new OneToHundredStream()
+  .pipe(new ChunkToAnotherStream())
+  .pipe(new MultiplyByTenStream())
